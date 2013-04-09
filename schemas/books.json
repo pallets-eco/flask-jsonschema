@@ -1,0 +1,17 @@
+{
+  "create": {
+    "type": "object",
+    "properties": {
+      "title": {},
+      "author": {}
+    },
+    "required": ["title", "author"]
+  },
+  "update": {
+    "type": "object",
+    "properties": {
+      "title": {},
+      "author": {}
+    }
+  }
+}
