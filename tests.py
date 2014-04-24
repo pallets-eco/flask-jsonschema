@@ -13,7 +13,7 @@ app.config['JSONSCHEMA_DIR'] = os.path.join(app.root_path, 'schemas')
 jsonschema = JsonSchema(app)
 
 
-@app.route('/books', methods=['POST'])
+@app.route('/books', methods=['GET', 'POST'])
 @jsonschema.validate('books', 'create')
 def books():
     return 'success'
@@ -48,3 +48,8 @@ class JsonSchemaTests(unittest.TestCase):
             })
         )
         self.assertIn('error', r.data)
+
+    def test_get(self):
+        r = client.get('/books')
+        self.assertIn('success', r.data)
+
