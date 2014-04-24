@@ -51,6 +51,8 @@ that you can organize related schemas in one file. If you do not wish to use thi
 feature you can simply use one schema per file and remove the second parameter
 to the ``@jsonschema.validate`` call.
 
+Validated methods can be specified in ``JSONSCHEMA_VALIDATE`` configuration variable.
+Without it only POST, PUT and PATCH requests get validated.
 
 Resources
 ---------
