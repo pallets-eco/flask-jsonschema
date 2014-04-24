@@ -55,6 +55,8 @@ class JsonSchema(object):
         def wrapper(fn):
             @wraps(fn)
             def decorated(*args, **kwargs):
+                if request.method == 'GET':
+                    return fn(*args, **kwargs)
                 schema = current_app.extensions['jsonschema'].get_schema(path)
                 validate(request.json, schema)
                 return fn(*args, **kwargs)
