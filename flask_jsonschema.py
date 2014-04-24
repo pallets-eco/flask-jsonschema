@@ -39,8 +39,6 @@ class JsonSchema(object):
     def init_app(self, app):
         default_dir = os.path.join(app.root_path, 'jsonschema')
         schema_dir = app.config.get('JSONSCHEMA_DIR', default_dir)
-        self.validated = app.config.get('JSONSCHEMA_VALIDATE', (
-            'POST', 'PUT', 'PATCH'))
         schemas = {}
         for fn in os.listdir(schema_dir):
             key = fn.split('.')[0]
@@ -57,8 +55,11 @@ class JsonSchema(object):
         def wrapper(fn):
             @wraps(fn)
             def decorated(*args, **kwargs):
-                if request.method in self.validated:
-                    schema = current_app.extensions['jsonschema'].get_schema(path)
+                methods = current_app.config.get('JSONSCHEMA_METHODS', (
+                    'POST', 'PUT', 'PATCH'))
+                if request.method in methods:
+                    schema = current_app.extensions['jsonschema'].get_schema(
+                        path)
                     validate(request.json, schema)
                 return fn(*args, **kwargs)
             return decorated
