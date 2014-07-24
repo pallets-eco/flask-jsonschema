@@ -5,13 +5,18 @@ JSON request validation for Flask applications.
 
 Place schemas in the specified ``JSONSCHEMA_DIR``. ::
 
-    import os
+If you want to use jsonchema FormatChecker function set the JSONSCHEMA_FORMAT_CHECKER variable. There
+are no format checkers enabled by default.
 
+    import os
+    import jsonschema
+	
     from flask import Flask, request
     from flask_jsonschema import JsonSchema, ValidationError
 
     app = Flask(__name__)
     app.config['JSONSCHEMA_DIR'] = os.path.join(app.root_path, 'schemas')
+    app.config['JSONSCHEMA_FORMAT_CHECKER'] = jsonschema.FormatChecker()
 
     jsonschema = JsonSchema(app)
 
