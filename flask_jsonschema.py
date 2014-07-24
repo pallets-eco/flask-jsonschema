@@ -56,7 +56,12 @@ class JsonSchema(object):
             @wraps(fn)
             def decorated(*args, **kwargs):
                 schema = current_app.extensions['jsonschema'].get_schema(path)
-                validate(request.json, schema)
+                validate_kwargs = dict()
+                # format checker
+                validate_kwargs['format_checker'] = current_app.config.get('JSONSCHEMA_FORMAT_CHECKER', None)
+                if 'format_checker' in kwargs:
+                     validate_kwargs['format_checker'] = kwargs['format_checker']
+                validate(request.json, schema, **validate_kwargs)
                 return fn(*args, **kwargs)
             return decorated
         return wrapper
