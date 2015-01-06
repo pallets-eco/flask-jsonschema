@@ -8,19 +8,20 @@ Place schemas in the specified ``JSONSCHEMA_DIR``. ::
     import os
 
     from flask import Flask, request
-    from flask_jsonschema import JsonSchema, ValidationError
+    from flask_jsonschema import JsonSchema, ValidationError, \
+            validate_schema
 
     app = Flask(__name__)
     app.config['JSONSCHEMA_DIR'] = os.path.join(app.root_path, 'schemas')
 
-    jsonschema = JsonSchema(app)
+    JsonSchema(app)
 
     @app.errorhandler(ValidationError)
     def on_validation_error(e):
         return "error"
 
     @app.route('/books', methods=['POST'])
-    @jsonschema.validate('books', 'create')
+    @validate_schema('books', 'create')
     def create_book():
         # create the book
         return 'success'

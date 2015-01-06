@@ -51,15 +51,16 @@ class JsonSchema(object):
         app.extensions['jsonschema'] = state
         return state
 
-    def validate(self, *path):
-        def wrapper(fn):
-            @wraps(fn)
-            def decorated(*args, **kwargs):
-                schema = current_app.extensions['jsonschema'].get_schema(path)
-                validate(request.json, schema)
-                return fn(*args, **kwargs)
-            return decorated
-        return wrapper
-
     def __getattr__(self, name):
         return getattr(self._state, name, None)
+
+def validate_schema(*schema_path):
+    def wrapper(fn):
+        @wraps(fn)
+        def decorated(*args, **kwargs):
+            schema = current_app.extensions['jsonschema'].get_schema(schema_path)
+            validate(request.json, schema)
+            return fn(*args, **kwargs)
+        return decorated
+    return wrapper
+
