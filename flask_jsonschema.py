@@ -21,7 +21,11 @@ from flask import current_app, request
 
 
 class DefaultSchemaLoader(object):
-    def __init__(self, app):
+    def __init__(self, app, format_checker_class=None):
+        self._load_schema(app)
+        self.format_checker = format_checker_class()
+
+    def _load_schema(self, app):
         default_dir = os.path.join(app.root_path, 'jsonschema')
         schema_dir = app.config.get('JSONSCHEMA_DIR', default_dir)
 
@@ -48,10 +52,11 @@ class DefaultSchemaLoader(object):
 
     def validate(self, path, data):
         schema = self.get_schema(path)
-        jsonschema.validate(schema, data)
+        jsonschema.validate(schema, data, format_checker=self.format_checker)
 
 class PrmdSchemaLoader(DefaultSchemaLoader):
-    def __init__(self, app):
+
+    def _load_schema(self, app):
         with open(app.config.get('JSONSCHEMA_SCHEMA')) as f:
             self._schema = json.load(f)
 
@@ -68,19 +73,22 @@ class PrmdSchemaLoader(DefaultSchemaLoader):
     def validate(self, path, data):
         schemata = self.get_schemata(path)
         resolver = jsonschema.RefResolver.from_schema(self._schema)
-        jsonschema.Draft4Validator(schemata, resolver=resolver).validate(data)
+        jsonschema.Draft4Validator(
+                schemata,
+                resolver=resolver,
+                format_checker=self.format_checker).validate(data)
 
 
 class JsonSchema(object):
-    def __init__(self, app=None, loader_class=None):
+    def __init__(self, app=None, loader_class=None, format_checker_class=None):
         self.app = app
         if app is not None:
-            self._state = self.init_app(app, loader_class)
+            self._state = self.init_app(app, loader_class, format_checker_class)
 
-    def init_app(self, app, loader_class=None):
+    def init_app(self, app, loader_class=None, format_checker_class=None):
         loader_class = loader_class or DefaultSchemaLoader
 
-        state = loader_class(app)
+        state = loader_class(app, format_checker_class)
         app.extensions['jsonschema'] = state
         return state
 
