@@ -50,6 +50,9 @@ class DefaultSchemaLoader(object):
             rv = rv[p]
         return rv
 
+    def validate_response(self, path, data):
+        pass # no response data here
+
     def validate(self, path, data):
         schema = self.get_schema(path)
         jsonschema.validate(schema, data, format_checker=self.format_checker)
@@ -69,6 +72,21 @@ class PrmdSchemaLoader(DefaultSchemaLoader):
         for link in schemata['links']:
             if link['rel'] == rel:
                 return link['schema']
+
+    def get_target_schemata(self, path):
+        schemata = self._schema['definitions'][path[0]]
+        rel = path[1]
+        for link in schemata['links']:
+            if link['rel'] == rel:
+                return link['targetSchema']
+
+    def validate_response(self, path, data):
+        schemata = self.get_target_schemata(path)
+        resolver = jsonschema.RefResolver.from_schema(self._schema)
+        jsonschema.Draft4Validator(
+                schemata,
+                resolver=resolver
+                format_checker=self.format_checker).validate(data)
 
     def validate(self, path, data):
         schemata = self.get_schemata(path)
@@ -101,6 +119,11 @@ def validate_schema(*schema_path):
         def decorated(*args, **kwargs):
             current_app.extensions['jsonschema'].validate(
                     schema_path, request.json)
-            return fn(*args, **kwargs)
+            out = fn(*args, **kwargs)
+            if (current_app.config['JSONSCHEMA_VALIDATE_RESPONSES']):
+                response_json = json.loads(out)
+                current_app.extensions['jsonschema'].validate_response(
+                        schema_path, response_json)
+            return out
         return decorated
     return wrapper
