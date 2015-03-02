@@ -130,9 +130,10 @@ def validate_schema(*schema_path):
                 @after_this_request
                 def post_validation(response):
                     if response.status_code == 200 and response.mimetype == 'application/json':
-                        response_json = json.loads(response.get_data())
-                        current_app.extensions['jsonschema'].validate_response(
-                            schema_path, response_json)
+                        if not current_app.extensions['jsonschema'].get_target_schemata(schema_path) is None:
+                            response_json = json.loads(response.get_data())
+                            current_app.extensions['jsonschema'].validate_response(
+                                schema_path, response_json)
                     return response
 
             return fn(*args, **kwargs)
