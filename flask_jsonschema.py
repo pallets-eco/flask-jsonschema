@@ -17,7 +17,7 @@ try:
 except ImportError:
     import json
 
-from flask import current_app, request
+from flask import current_app, request, g
 
 
 class DefaultSchemaLoader(object):
@@ -119,11 +119,14 @@ def validate_schema(*schema_path):
         def decorated(*args, **kwargs):
             current_app.extensions['jsonschema'].validate(
                     schema_path, request.json)
-            out = fn(*args, **kwargs)
             if (current_app.config['JSONSCHEMA_VALIDATE_RESPONSES']):
-                response_json = json.loads(out.get_data())
-                current_app.extensions['jsonschema'].validate_response(
-                        schema_path, response_json)
-            return out
+                @after_this_request
+                def post_validation(response):
+                   response_json = json.loads(response.get_data())
+                   current_app.extensions['jsonschema'].validate_response(
+                           schema_path, response_json)
+                   return response
+
+            return fn(*args, **kwargs)
         return decorated
     return wrapper
