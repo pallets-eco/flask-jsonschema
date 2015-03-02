@@ -85,7 +85,7 @@ class PrmdSchemaLoader(DefaultSchemaLoader):
         resolver = jsonschema.RefResolver.from_schema(self._schema)
         jsonschema.Draft4Validator(
                 schemata,
-                resolver=resolver
+                resolver=resolver,
                 format_checker=self.format_checker).validate(data)
 
     def validate(self, path, data):
