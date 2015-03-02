@@ -88,8 +88,8 @@ class PrmdSchemaLoader(DefaultSchemaLoader):
                 resolver=resolver,
                 format_checker=self.format_checker).validate(data)
 
-    def validate(self, path, data):
-        schemata = self.get_schemata(path)
+        def validate(self, path, data):
+            schemata = self.get_schemata(path)
         resolver = jsonschema.RefResolver.from_schema(self._schema)
         jsonschema.Draft4Validator(
                 schemata,
@@ -97,9 +97,9 @@ class PrmdSchemaLoader(DefaultSchemaLoader):
                 format_checker=self.format_checker).validate(data)
 
 
-class JsonSchema(object):
-    def __init__(self, app=None, loader_class=None, format_checker_class=None):
-        self.app = app
+        class JsonSchema(object):
+            def __init__(self, app=None, loader_class=None, format_checker_class=None):
+                self.app = app
         if app is not None:
             self._state = self.init_app(app, loader_class, format_checker_class)
 
@@ -122,10 +122,11 @@ def validate_schema(*schema_path):
             if (current_app.config['JSONSCHEMA_VALIDATE_RESPONSES']):
                 @after_this_request
                 def post_validation(response):
-                   response_json = json.loads(response.get_data())
-                   current_app.extensions['jsonschema'].validate_response(
-                           schema_path, response_json)
-                   return response
+                    if response.status_code == 200:
+                        response_json = json.loads(response.get_data())
+                        current_app.extensions['jsonschema'].validate_response(
+                               schema_path, response_json)
+                    return response
 
             return fn(*args, **kwargs)
         return decorated
