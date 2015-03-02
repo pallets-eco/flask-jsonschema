@@ -97,9 +97,9 @@ class PrmdSchemaLoader(DefaultSchemaLoader):
                 format_checker=self.format_checker).validate(data)
 
 
-        class JsonSchema(object):
-            def __init__(self, app=None, loader_class=None, format_checker_class=None):
-                self.app = app
+class JsonSchema(object):
+    def __init__(self, app=None, loader_class=None, format_checker_class=None):
+        self.app = app
         if app is not None:
             self._state = self.init_app(app, loader_class, format_checker_class)
 
