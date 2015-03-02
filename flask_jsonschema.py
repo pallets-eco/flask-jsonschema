@@ -80,20 +80,25 @@ class PrmdSchemaLoader(DefaultSchemaLoader):
         rel = path[1]
         for link in schemata['links']:
             if link['rel'] == rel:
-                return link['targetSchema']
+                try:
+                    return link['targetSchema']
+                except:
+                    return None
 
     def validate_response(self, path, data):
         schemata = self.get_target_schemata(path)
+        if schemata is None: 
+            return
         resolver = jsonschema.RefResolver.from_schema(self._schema)
         jsonschema.Draft4Validator(schemata, resolver=resolver,
                                    format_checker=self.format_checker) \
             .validate(data)
 
-        def validate(self, path, data):
-            schemata = self.get_schemata(path)
+    def validate(self, path, data):
+        schemata = self.get_schemata(path)
         resolver = jsonschema.RefResolver.from_schema(self._schema)
         jsonschema.Draft4Validator(schemata, resolver=resolver,
-                                   format_checker=self.format_checker) \
+                               format_checker=self.format_checker) \
             .validate(data)
 
 
