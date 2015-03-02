@@ -129,7 +129,7 @@ def validate_schema(*schema_path):
             if (current_app.config['JSONSCHEMA_VALIDATE_RESPONSES']):
                 @after_this_request
                 def post_validation(response):
-                    if response.status_code == 200:
+                    if response.status_code == 200 and response.mimetype == 'application/json':
                         response_json = json.loads(response.get_data())
                         current_app.extensions['jsonschema'].validate_response(
                             schema_path, response_json)
