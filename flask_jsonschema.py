@@ -51,11 +51,13 @@ class DefaultSchemaLoader(object):
         return rv
 
     def validate_response(self, path, data):
-        pass # no response data here
+        # no response data here
+        pass
 
     def validate(self, path, data):
         schema = self.get_schema(path)
         jsonschema.validate(schema, data, format_checker=self.format_checker)
+
 
 class PrmdSchemaLoader(DefaultSchemaLoader):
 
@@ -63,7 +65,7 @@ class PrmdSchemaLoader(DefaultSchemaLoader):
         with open(app.config.get('JSONSCHEMA_SCHEMA')) as f:
             self._schema = json.load(f)
 
-    def get_schema(self):
+    def get_schema(self, path):
         return self._schema
 
     def get_schemata(self, path):
@@ -83,25 +85,24 @@ class PrmdSchemaLoader(DefaultSchemaLoader):
     def validate_response(self, path, data):
         schemata = self.get_target_schemata(path)
         resolver = jsonschema.RefResolver.from_schema(self._schema)
-        jsonschema.Draft4Validator(
-                schemata,
-                resolver=resolver,
-                format_checker=self.format_checker).validate(data)
+        jsonschema.Draft4Validator(schemata, resolver=resolver,
+                                   format_checker=self.format_checker) \
+            .validate(data)
 
         def validate(self, path, data):
             schemata = self.get_schemata(path)
         resolver = jsonschema.RefResolver.from_schema(self._schema)
-        jsonschema.Draft4Validator(
-                schemata,
-                resolver=resolver,
-                format_checker=self.format_checker).validate(data)
+        jsonschema.Draft4Validator(schemata, resolver=resolver,
+                                   format_checker=self.format_checker) \
+            .validate(data)
 
 
 class JsonSchema(object):
     def __init__(self, app=None, loader_class=None, format_checker_class=None):
         self.app = app
         if app is not None:
-            self._state = self.init_app(app, loader_class, format_checker_class)
+            self._state = self.init_app(app, loader_class,
+                                        format_checker_class)
 
     def init_app(self, app, loader_class=None, format_checker_class=None):
         loader_class = loader_class or DefaultSchemaLoader
@@ -113,19 +114,20 @@ class JsonSchema(object):
     def __getattr__(self, name):
         return getattr(self._state, name, None)
 
+
 def validate_schema(*schema_path):
     def wrapper(fn):
         @wraps(fn)
         def decorated(*args, **kwargs):
             current_app.extensions['jsonschema'].validate(
-                    schema_path, request.json)
+                schema_path, request.json)
             if (current_app.config['JSONSCHEMA_VALIDATE_RESPONSES']):
                 @after_this_request
                 def post_validation(response):
                     if response.status_code == 200:
                         response_json = json.loads(response.get_data())
                         current_app.extensions['jsonschema'].validate_response(
-                               schema_path, response_json)
+                            schema_path, response_json)
                     return response
 
             return fn(*args, **kwargs)
