@@ -121,7 +121,7 @@ def validate_schema(*schema_path):
                     schema_path, request.json)
             out = fn(*args, **kwargs)
             if (current_app.config['JSONSCHEMA_VALIDATE_RESPONSES']):
-                response_json = json.loads(out)
+                response_json = json.loads(out.get_data())
                 current_app.extensions['jsonschema'].validate_response(
                         schema_path, response_json)
             return out
