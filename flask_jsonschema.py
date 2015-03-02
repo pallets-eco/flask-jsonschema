@@ -17,7 +17,7 @@ try:
 except ImportError:
     import json
 
-from flask import current_app, request, g
+from flask import current_app, request, g, after_this_request
 
 
 class DefaultSchemaLoader(object):
