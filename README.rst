@@ -25,6 +25,18 @@ Place schemas in the specified ``JSONSCHEMA_DIR``. ::
         # create the book
         return 'success'
 
+
+An alternative way to use jsonschema is as follows ::
+
+    from flask.ext.jsonschema import JsonSchema
+
+    app = Flask(__name__)
+    app.config['JSONSCHEMA_DIR'] = os.path.join(app.root_path, 'schemas')
+
+    jsonschema = JsonSchema()
+    jsoschema.init_app(app)
+
+
 The schema for the example above should be named ``books.json`` and should
 reside in the configured folder. It should look like so::
 
