@@ -122,14 +122,14 @@ def validate_schema(*schema_path):
     def wrapper(fn):
         @wraps(fn)
         def decorated(*args, **kwargs):
-            current_app.extensions['jsonschema'].validate(
-                schema_path, request.json)
+            if (request.get_json(True, True, True)):
+                current_app.extensions['jsonschema'].validate(schema_path, request.get_json(True, False, True))
             if (current_app.config['JSONSCHEMA_VALIDATE_RESPONSES']):
                 @after_this_request
                 def post_validation(response):
                     if response.status_code == 200 and response.mimetype == 'application/json':
                         if not current_app.extensions['jsonschema'].get_target_schemata(schema_path) is None:
-                            response_json = response.json()
+                            response_json = response.json
                             current_app.extensions['jsonschema'].validate_response(schema_path, response_json)
                     return response
 
