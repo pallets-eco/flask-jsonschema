@@ -17,11 +17,13 @@ try:
 except ImportError:
     import json
 
-from flask import current_app, request, g, after_this_request
+from flask import current_app, request, after_this_request
 
 
 class DefaultSchemaLoader(object):
     def __init__(self, app, format_checker_class=None):
+        self.validate_responses = app.config.get(
+            'JSONSCHEMA_VALIDATE_RESPONSES', False)
         self._load_schema(app)
         self.format_checker = format_checker_class()
 
@@ -51,7 +53,9 @@ class DefaultSchemaLoader(object):
         return rv
 
     def validate_response(self, path, data):
-        # no response data here
+        """Validate that the response for a request matches the schema. This is
+        disabled by default.
+        """
         pass
 
     def validate(self, path, data):
@@ -73,9 +77,13 @@ class PrmdSchemaLoader(DefaultSchemaLoader):
         rel = path[1]
         for link in schemata['links']:
             if link['rel'] == rel:
-                return link['schema']
+                # This path may not have a schema for the given HTTP method,
+                # e.g. a GET - return a blank schema to allow it to validate.
+                return link.get('schema', {})
 
     def get_target_schemata(self, path):
+        """Find the targetSchema for a given path - i.e. the return data schema.
+        """
         schemata = self._schema['definitions'][path[0]]
         rel = path[1]
         for link in schemata['links']:
@@ -83,21 +91,25 @@ class PrmdSchemaLoader(DefaultSchemaLoader):
                 try:
                     return link['targetSchema']
                 except:
-                    return None
+                    # If no explicit targetSchema is provided, the default is
+                    # the schemata itself.
+                    return schemata
 
     def validate_response(self, path, data):
         schemata = self.get_target_schemata(path)
-        if schemata is None: 
+        if schemata is None:
             return
         resolver = jsonschema.RefResolver.from_schema(self._schema)
-        jsonschema.Draft4Validator(schemata, resolver=resolver,
-                                   format_checker=self.format_checker).validate(data)
+        jsonschema.Draft4Validator(
+            schemata, resolver=resolver,
+            format_checker=self.format_checker).validate(data)
 
     def validate(self, path, data):
         schemata = self.get_schemata(path)
         resolver = jsonschema.RefResolver.from_schema(self._schema)
-        jsonschema.Draft4Validator(schemata, resolver=resolver,
-                               format_checker=self.format_checker).validate(data)
+        jsonschema.Draft4Validator(
+            schemata, resolver=resolver,
+            format_checker=self.format_checker).validate(data)
 
 
 class JsonSchema(object):
@@ -122,15 +134,15 @@ def validate_schema(*schema_path):
     def wrapper(fn):
         @wraps(fn)
         def decorated(*args, **kwargs):
-            if (request.get_json(True, True, True)):
-                current_app.extensions['jsonschema'].validate(schema_path, request.get_json(True, False, True))
-            if (current_app.config['JSONSCHEMA_VALIDATE_RESPONSES']):
+            validator = current_app.extensions['jsonschema']
+            validator.validate(schema_path, request.get_json(silent=True))
+
+            if validator.validate_responses:
                 @after_this_request
                 def post_validation(response):
-                    if response.status_code == 200 and response.mimetype == 'application/json':
-                        if not current_app.extensions['jsonschema'].get_target_schemata(schema_path) is None:
-                            response_json = response.json
-                            current_app.extensions['jsonschema'].validate_response(schema_path, response_json)
+                    if (response.status_code == 200 and
+                            response.mimetype == 'application/json'):
+                        validator.validate_response(schema_path, response.json)
                     return response
 
             return fn(*args, **kwargs)
