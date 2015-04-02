@@ -91,6 +91,19 @@ class PrmdSchemaLoader(DefaultSchemaLoader):
                 try:
                     return link['targetSchema']
                 except:
+                    if rel == "instances":
+                        # prmd seems to handle this when creating the
+                        # documentation, but for endpoints returning lists of a
+                        # resource, require it to be wrapped in 'objects'.
+                        return {
+                            'type': "object",
+                            'properties': {
+                                'objects': {
+                                    'type': "array",
+                                    'items': schemata
+                                }
+                            }
+                        }
                     # If no explicit targetSchema is provided, the default is
                     # the schemata itself.
                     return schemata
