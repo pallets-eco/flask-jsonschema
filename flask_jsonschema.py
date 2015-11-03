@@ -31,8 +31,9 @@ class _JsonSchema(object):
 
 
 class JsonSchema(object):
-    def __init__(self, app=None):
+    def __init__(self, app=None, format_checker=None):
         self.app = app
+        self.format_checker = format_checker
         if app is not None:
             self._state = self.init_app(app)
 
@@ -56,7 +57,7 @@ class JsonSchema(object):
             @wraps(fn)
             def decorated(*args, **kwargs):
                 schema = current_app.extensions['jsonschema'].get_schema(path)
-                validate(request.json, schema)
+                validate(request.json, schema, format_checker=self.format_checker)
                 return fn(*args, **kwargs)
             return decorated
         return wrapper
