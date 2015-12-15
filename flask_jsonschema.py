@@ -16,7 +16,7 @@ except ImportError:
     import json
 
 from flask import current_app, request
-from jsonschema import ValidationError, validate
+from jsonschema.validators import validator_for
 
 
 class _JsonSchema(object):
@@ -28,6 +28,12 @@ class _JsonSchema(object):
         for p in path[1:]:
             rv = rv[p]
         return rv
+
+
+class ValidationError(Exception):
+    def __init__(self, message,  schema_errors, *args, **kwargs):
+        super(ValidationError, self).__init__(message, *args, **kwargs)
+        self.schema_errors = schema_errors
 
 
 class JsonSchema(object):
@@ -57,7 +63,11 @@ class JsonSchema(object):
             @wraps(fn)
             def decorated(*args, **kwargs):
                 schema = current_app.extensions['jsonschema'].get_schema(path)
-                validate(request.json, schema, format_checker=self.format_checker)
+                validator_class = validator_for(schema)
+                validator = validator_class(schema, format_checker=self.format_checker)
+                errors = list(validator.iter_errors(request.json))
+                if errors:
+                    raise ValidationError('Error validation request against schema', errors)
                 return fn(*args, **kwargs)
             return decorated
         return wrapper
