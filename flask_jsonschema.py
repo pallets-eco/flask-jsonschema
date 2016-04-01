@@ -29,6 +29,16 @@ class _JsonSchema(object):
             rv = rv[p]
         return rv
 
+def load_schemas_from_dir(schema_dir):
+    schemas = {}
+    for fn in os.listdir(schema_dir):
+        key = fn.split('.')[0]
+        fn = os.path.join(schema_dir, fn)
+        if os.path.isdir(fn) or not fn.endswith('.json'):
+            continue
+        with open(fn) as f:
+            schemas[key] = json.load(f)
+    return schemas
 
 class JsonSchema(object):
     def __init__(self, app=None):
@@ -36,20 +46,14 @@ class JsonSchema(object):
         if app is not None:
             self._state = self.init_app(app)
 
-    def init_app(self, app):
-        default_dir = os.path.join(app.root_path, 'jsonschema')
-        schema_dir = app.config.get('JSONSCHEMA_DIR', default_dir)
-        schemas = {}
-        for fn in os.listdir(schema_dir):
-            key = fn.split('.')[0]
-            fn = os.path.join(schema_dir, fn)
-            if os.path.isdir(fn) or not fn.endswith('.json'):
-                continue
-            with open(fn) as f:
-                schemas[key] = json.load(f)
-        state = _JsonSchema(schemas)
-        app.extensions['jsonschema'] = state
-        return state
+    def init_app(self, app, schemas=None):
+        if schemas is None:
+            default_dir = os.path.join(app.root_path, 'jsonschema')
+            schema_dir = app.config.get('JSONSCHEMA_DIR', default_dir)
+            schemas = load_schemas_from_dir(schema_dir)
+        jsonschema = _JsonSchema(schemas)
+        app.extensions['jsonschema'] = jsonschema
+        return jsonschema
 
     def validate(self, *path):
         def wrapper(fn):
