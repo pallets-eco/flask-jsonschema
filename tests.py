@@ -43,6 +43,15 @@ class JsonSchemaTests(unittest.TestCase):
         r = client.post(
             '/books',
             content_type='application/json',
+            data="Not valid JSON because ends with comma,",
+        )
+
+        self.assertEqual(r.status_code, 400)
+
+    def test_json_does_not_conform_to_schema(self):
+        r = client.post(
+            '/books',
+            content_type='application/json',
             data=json.dumps({
                 'title': 'Infinite Jest'
             })
